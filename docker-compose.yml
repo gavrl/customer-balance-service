@@ -1,27 +1,35 @@
 version: '3.9'
 
 networks:
-  customer-api:
+  balance-api:
 
 volumes:
   pgdata:
 
 services:
-  api:
-    container_name: customer-api
+  balance-api:
+    container_name: balance-api
     build: ./
     volumes:
       - ./:/go/src/app
-    command: ./cmd/wait-for-postgres.sh -h db -u ${POSTGRES_USER} -p ${POSTGRES_PASSWORD} -d ${POSTGRES_DB} -c ./customer-api
+    environment:
+      POSTGRES_HOST: balance-db
+      POSTGRES_PORT: 5432
+    command:
+      - /bin/sh
+      - -c
+      - |
+        ./cmd/app/wait-for-postgres.sh -h balance-db -u ${POSTGRES_USER} -p ${POSTGRES_PASSWORD} -d ${POSTGRES_DB} -c "migrate -path ./internal/store/pg/migrations -database postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@balance-db:5432/${POSTGRES_DB}?sslmode=${POSTGRES_SSL_MODE} up"
+        ./balance-api
     ports:
-      - "${API_PORT}:8080"
+      - "${HTTP_PORT}:8080"
     depends_on:
-      - db
+      - balance-db
     networks:
-      - customer-api
+      - balance-api
 
-  db:
-    container_name: customer-db
+  balance-db:
+    container_name: balance-db
     image: postgres:13-alpine
     restart: always
     volumes:
@@ -35,4 +43,4 @@ services:
     ports:
       - "${POSTGRES_PORT}:5432"
     networks:
-      - customer-api
+      - balance-api
