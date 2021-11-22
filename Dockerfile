@@ -6,13 +6,12 @@ ENV GOPATH=/
 COPY ./ ./
 
 # install psql, golang-migrate
-#RUN curl -L https://packagecloud.io/golang-migrate/migrate/gpgkey | apt-key add -
-#RUN echo "deb https://packagecloud.io/golang-migrate/migrate/ubuntu/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/migrate.list
 RUN apt-get update
 RUN apt-get -y install postgresql-client
-#RUN apt-get install -y migrate
-
 RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+# install mockgen
+RUN go install github.com/golang/mock/mockgen@v1.6.0
 
 ## Substitute BIN for your bin directory.
 ## Substitute VERSION for the current released version.

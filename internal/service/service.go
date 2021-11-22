@@ -7,8 +7,9 @@ import (
 )
 
 type Balance interface {
-	RefillBalance(input model.RefillDto) (int, error)
-	GetBalanceByCustomerId(customerId int) (internal.Balance, error)
+	Refill(input model.RefillDto) (int, error)
+	GetByCustomerId(customerId int) (internal.Balance, error)
+	create(customerId int, amount int) (int, error)
 }
 
 type Service struct {

@@ -14,13 +14,15 @@ func (h *Handler) refill(c *gin.Context) {
 		return
 	}
 
-	_, err := h.services.Balance.RefillBalance(input)
+	amount, err := h.services.Balance.Refill(input)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
+	penny := model.PennyAmount{Int: amount}
+
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"message": "XE-XE-XE",
+		"amount": &penny,
 	})
 }

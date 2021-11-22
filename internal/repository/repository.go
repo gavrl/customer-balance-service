@@ -5,9 +5,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-const (
-	balanceTable = "balance"
-)
+const balanceTable = "balance"
 
 type Config struct {
 	Host     string
@@ -18,17 +16,19 @@ type Config struct {
 	SSLMode  string
 }
 
-type Balance interface {
-	RefillBalance(balance internal.Balance) (int, error)
-	GetBalanceByCustomerId(customerId int) (internal.Balance, error)
+type BalanceRepository interface {
+	Refill(balance internal.Balance) error
+	GetByCustomerId(customerId int) (internal.Balance, error)
+	Create(customerId int, amount int) (int, error)
+	UpdateAmount(balance internal.Balance) error
 }
 
 type Repository struct {
-	Balance
+	BalanceRepository
 }
 
 func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{
-		Balance: NewBalancePostgres(db),
+		BalanceRepository: NewBalancePostgres(db),
 	}
 }

@@ -1,7 +1,7 @@
 package internal
 
 type Balance struct {
-	Id         int    `json:"-" db:"id"`
-	CustomerId string `json:"customer_id" binding:"required"`
-	Balance    string `json:"balance" binding:"required"`
+	Id         int `db:"id"`
+	CustomerId int `db:"customer_id" binding:"required"`
+	Amount     int `db:"amount" binding:"required"`
 }
