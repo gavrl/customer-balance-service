@@ -6,6 +6,7 @@ import (
 	"github.com/gavrl/app/internal/handler"
 	"github.com/gavrl/app/internal/repository"
 	"github.com/gavrl/app/internal/service"
+	"github.com/gavrl/app/pkg/formatter"
 	"github.com/gavrl/app/util"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -34,9 +35,10 @@ func main() {
 		logrus.Fatalf("failed to initialize db: %s", err.Error())
 	}
 
+	frmt, err := formatter.NewJSONFormatter()
 	repos := repository.NewRepository(db)
 	services := service.NewService(repos)
-	handlers := handler.NewHandler(services)
+	handlers := handler.NewHandler(services, frmt)
 
 	srv := new(internal.Server)
 

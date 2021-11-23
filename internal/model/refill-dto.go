@@ -8,12 +8,12 @@ import (
 )
 
 type RefillDto struct {
-	CustomerId int         `json:"customer_id" binding:"required"`
-	Amount     PennyAmount `json:"amount" binding:"required"`
+	CustomerId int         `json:"customer_id" binding:"required,gt=0"`
+	Amount     PennyAmount `json:"amount" binding:"required,gt=0"`
 }
 
 type PennyAmount struct {
-	Int int
+	Int int `json:"amount" binding:"required,gt=0"`
 }
 
 func (ci *PennyAmount) UnmarshalJSON(data []byte) error {

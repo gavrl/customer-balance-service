@@ -2,15 +2,20 @@ package handler
 
 import (
 	"github.com/gavrl/app/internal/service"
+	"github.com/gavrl/app/pkg/formatter"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
-	services *service.Service
+	services  *service.Service
+	formatter *formatter.JSONFormatter
 }
 
-func NewHandler(services *service.Service) *Handler {
-	return &Handler{services: services}
+func NewHandler(services *service.Service, frmt *formatter.JSONFormatter) *Handler {
+	return &Handler{
+		services:  services,
+		formatter: frmt,
+	}
 }
 
 func (h *Handler) InitRoutes() *gin.Engine {
