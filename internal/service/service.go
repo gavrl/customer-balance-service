@@ -12,6 +12,7 @@ type Balance interface {
 	Withdraw(input *model.MoveMoneyModel) (int, error)
 	GetByCustomerId(customerId int) (internal.Balance, error)
 	create(customerId int, amount int) (int, error)
+	Transfer(input *model.TransferMoneyModel) error
 }
 
 type Service struct {

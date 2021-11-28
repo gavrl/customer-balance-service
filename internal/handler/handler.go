@@ -23,9 +23,10 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 	balance := router.Group("/balance")
 	{
+		balance.GET("/:id", h.getBalanceByCustomerId)
 		balance.POST("/refill", h.refill)
 		balance.POST("/withdraw", h.withdraw)
-		balance.GET("/:id", h.getBalanceByCustomerId)
+		balance.POST("/transfer", h.transfer)
 	}
 
 	return router

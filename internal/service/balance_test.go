@@ -74,7 +74,7 @@ func TestRefill(t *testing.T) {
 					CustomerId: 1,
 					Amount:     1200,
 				}, nil)
-				f.balanceRepo.EXPECT().UpdateAmount(internal.Balance{
+				f.balanceRepo.EXPECT().UpdateAmount(&internal.Balance{
 					Id:         1,
 					CustomerId: 1,
 					Amount:     2200,
@@ -124,7 +124,7 @@ func TestRefill(t *testing.T) {
 					CustomerId: 1,
 					Amount:     1200,
 				}, nil)
-				f.balanceRepo.EXPECT().UpdateAmount(internal.Balance{
+				f.balanceRepo.EXPECT().UpdateAmount(&internal.Balance{
 					Id:         1,
 					CustomerId: 1,
 					Amount:     2400,
@@ -231,7 +231,7 @@ func TestWithdraw(t *testing.T) {
 					CustomerId: 1,
 					Amount:     1200,
 				}, nil)
-				f.balanceRepo.EXPECT().UpdateAmount(internal.Balance{
+				f.balanceRepo.EXPECT().UpdateAmount(&internal.Balance{
 					Id:         1,
 					CustomerId: 1,
 					Amount:     200,
@@ -267,7 +267,7 @@ func TestWithdraw(t *testing.T) {
 					CustomerId: 1,
 					Amount:     1200,
 				}, nil)
-				f.balanceRepo.EXPECT().UpdateAmount(internal.Balance{
+				f.balanceRepo.EXPECT().UpdateAmount(&internal.Balance{
 					Id:         1,
 					CustomerId: 1,
 					Amount:     200,
@@ -307,6 +307,166 @@ func TestWithdraw(t *testing.T) {
 			}
 
 			req.Equal(cs.want, res)
+		})
+	}
+}
+
+func TestTransfer(t *testing.T) {
+	req := require.New(t)
+
+	type deps struct {
+		balanceRepo *servicemock.MockBalanceRepository
+	}
+	type args struct {
+		transferMoneyModel model.TransferMoneyModel
+	}
+	tests := []struct {
+		name         string
+		prepare      func(f *deps)
+		input        args
+		isError      bool
+		errorMessage string
+	}{
+		{
+			name: "not found customer from",
+			prepare: func(f *deps) {
+				f.balanceRepo.EXPECT().GetByCustomerId(1).Times(1).Return(internal.Balance{}, sql.ErrNoRows)
+			},
+			input: args{
+				transferMoneyModel: model.TransferMoneyModel{CustomerIdFrom: 1, CustomerIdTo: 2, Amount: 1000},
+			},
+			isError:      true,
+			errorMessage: "customer with id 1 does not exists",
+		},
+		{
+			name: "not found customer to",
+			prepare: func(f *deps) {
+				f.balanceRepo.EXPECT().GetByCustomerId(1).Times(1).Return(internal.Balance{
+					Id:         1,
+					CustomerId: 1,
+					Amount:     1200,
+				}, nil)
+				f.balanceRepo.EXPECT().GetByCustomerId(2).Times(1).Return(internal.Balance{}, sql.ErrNoRows)
+			},
+			input: args{
+				transferMoneyModel: model.TransferMoneyModel{CustomerIdFrom: 1, CustomerIdTo: 2, Amount: 1000},
+			},
+			isError:      true,
+			errorMessage: "customer with id 2 does not exists",
+		},
+		{
+			name: "negative amount",
+			input: args{
+				transferMoneyModel: model.TransferMoneyModel{CustomerIdFrom: 1, CustomerIdTo: 2, Amount: -1000},
+			},
+			isError:      true,
+			errorMessage: "Field validation for 'Amount' failed on the 'gt' tag",
+		},
+		{
+			name: "not enough funds to transfer",
+			prepare: func(f *deps) {
+				f.balanceRepo.EXPECT().GetByCustomerId(1).Times(1).Return(internal.Balance{
+					Id:         1,
+					CustomerId: 1,
+					Amount:     1000,
+				}, nil)
+				f.balanceRepo.EXPECT().GetByCustomerId(2).Times(1).Return(internal.Balance{
+					Id:         2,
+					CustomerId: 2,
+					Amount:     1200,
+				}, nil)
+			},
+			input: args{
+				transferMoneyModel: model.TransferMoneyModel{CustomerIdFrom: 1, CustomerIdTo: 2, Amount: 3000},
+			},
+			isError:      true,
+			errorMessage: "there are not enough funds",
+		},
+		{
+			name: "database error from transfer()",
+			prepare: func(f *deps) {
+				f.balanceRepo.EXPECT().GetByCustomerId(1).Times(1).Return(internal.Balance{
+					Id:         1,
+					CustomerId: 1,
+					Amount:     1000,
+				}, nil)
+				f.balanceRepo.EXPECT().GetByCustomerId(2).Times(1).Return(internal.Balance{
+					Id:         2,
+					CustomerId: 2,
+					Amount:     1200,
+				}, nil)
+
+				f.balanceRepo.EXPECT().TransferMoney(&internal.Balance{
+					Id:         1,
+					CustomerId: 1,
+					Amount:     500,
+				}, &internal.Balance{
+					Id:         2,
+					CustomerId: 2,
+					Amount:     1700,
+				}).Times(1).Return(errors.New("unexpected error from database"))
+			},
+			input: args{
+				transferMoneyModel: model.TransferMoneyModel{CustomerIdFrom: 1, CustomerIdTo: 2, Amount: 500},
+			},
+			isError:      true,
+			errorMessage: "error from database",
+		},
+		{
+			name: "success transfer",
+			prepare: func(f *deps) {
+				f.balanceRepo.EXPECT().GetByCustomerId(1).Times(1).Return(internal.Balance{
+					Id:         1,
+					CustomerId: 1,
+					Amount:     1000,
+				}, nil)
+				f.balanceRepo.EXPECT().GetByCustomerId(2).Times(1).Return(internal.Balance{
+					Id:         2,
+					CustomerId: 2,
+					Amount:     1200,
+				}, nil)
+
+				f.balanceRepo.EXPECT().TransferMoney(&internal.Balance{
+					Id:         1,
+					CustomerId: 1,
+					Amount:     500,
+				}, &internal.Balance{
+					Id:         2,
+					CustomerId: 2,
+					Amount:     1700,
+				}).Times(1).Return(nil)
+			},
+			input: args{
+				transferMoneyModel: model.TransferMoneyModel{CustomerIdFrom: 1, CustomerIdTo: 2, Amount: 500},
+			},
+			isError:      false,
+			errorMessage: "",
+		},
+	}
+
+	for _, cs := range tests {
+		t.Run(cs.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			f := deps{
+				balanceRepo: servicemock.NewMockBalanceRepository(ctrl),
+			}
+			if cs.prepare != nil {
+				cs.prepare(&f)
+			}
+			s := &BalanceService{
+				repo:      f.balanceRepo,
+				validator: validator.New(),
+			}
+
+			err := s.Transfer(&cs.input.transferMoneyModel)
+
+			if cs.isError {
+				req.Error(err)
+				req.Contains(err.Error(), cs.errorMessage)
+			} else {
+				req.NoError(err)
+			}
 		})
 	}
 }

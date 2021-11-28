@@ -87,6 +87,36 @@ func (bs BalanceService) GetByCustomerId(customerId int) (internal.Balance, erro
 	return balance, nil
 }
 
+func (bs BalanceService) Transfer(transferModel *model.TransferMoneyModel) error {
+	err := bs.validator.Struct(transferModel)
+	if err != nil {
+		return err.(validator.ValidationErrors)
+	}
+
+	balanceFrom, err := bs.GetByCustomerId(transferModel.CustomerIdFrom)
+	if err != nil {
+		return err
+	}
+	balanceTo, err := bs.GetByCustomerId(transferModel.CustomerIdTo)
+	if err != nil {
+		return err
+	}
+
+	if balanceFrom.Amount-transferModel.Amount < 0 {
+		return NotEnoughFundsError{}
+	}
+
+	balanceFrom.Amount -= transferModel.Amount
+	balanceTo.Amount += transferModel.Amount
+
+	err = bs.repo.TransferMoney(&balanceFrom, &balanceTo)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (bs BalanceService) create(customerId int, amount int) (int, error) {
 	amnt, err := bs.repo.Create(customerId, amount)
 	if err != nil {
@@ -96,7 +126,7 @@ func (bs BalanceService) create(customerId int, amount int) (int, error) {
 }
 
 func (bs BalanceService) updateAmount(balance internal.Balance) error {
-	err := bs.repo.UpdateAmount(balance)
+	err := bs.repo.UpdateAmount(&balance)
 	if err != nil {
 		return err
 	}

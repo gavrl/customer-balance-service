@@ -64,8 +64,22 @@ func (mr *MockBalanceRepositoryMockRecorder) GetByCustomerId(customerId interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByCustomerId", reflect.TypeOf((*MockBalanceRepository)(nil).GetByCustomerId), customerId)
 }
 
+// TransferMoney mocks base method.
+func (m *MockBalanceRepository) TransferMoney(balanceFrom, balanceTo *internal.Balance) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TransferMoney", balanceFrom, balanceTo)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TransferMoney indicates an expected call of TransferMoney.
+func (mr *MockBalanceRepositoryMockRecorder) TransferMoney(balanceFrom, balanceTo interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TransferMoney", reflect.TypeOf((*MockBalanceRepository)(nil).TransferMoney), balanceFrom, balanceTo)
+}
+
 // UpdateAmount mocks base method.
-func (m *MockBalanceRepository) UpdateAmount(balance internal.Balance) error {
+func (m *MockBalanceRepository) UpdateAmount(balance *internal.Balance) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateAmount", balance)
 	ret0, _ := ret[0].(error)

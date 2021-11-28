@@ -19,7 +19,8 @@ type Config struct {
 type BalanceRepository interface {
 	GetByCustomerId(customerId int) (internal.Balance, error)
 	Create(customerId int, amount int) (int, error)
-	UpdateAmount(balance internal.Balance) error
+	UpdateAmount(balance *internal.Balance) error
+	TransferMoney(balanceFrom *internal.Balance, balanceTo *internal.Balance) error
 }
 
 type Repository struct {

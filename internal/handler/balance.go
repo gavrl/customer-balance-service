@@ -108,3 +108,34 @@ func (h *Handler) getBalanceByCustomerId(c *gin.Context) {
 
 	c.JSON(http.StatusOK, &outDTO)
 }
+
+func (h *Handler) transfer(c *gin.Context) {
+	var input dto.TransferMoneyDTO
+	var verr validator.ValidationErrors
+
+	if err := c.ShouldBind(&input); err != nil {
+		if errors.As(err, &verr) {
+			newValidateErrorResponse(c, h.formatter, verr)
+			return
+		}
+
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err := h.services.Balance.Transfer(&model.TransferMoneyModel{
+		CustomerIdFrom: input.CustomerIdFrom,
+		CustomerIdTo:   input.CustomerIdTo,
+		Amount:         input.Amount.Int,
+	})
+
+	if err != nil {
+		if errors.As(err, &verr) {
+			newValidateErrorResponse(c, h.formatter, verr)
+		} else {
+			newErrorResponse(c, http.StatusInternalServerError, err.Error())
+
+		}
+		return
+	}
+}
