@@ -25,6 +25,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	{
 		balance.POST("/refill", h.refill)
 		balance.POST("/withdraw", h.withdraw)
+		balance.GET("/:id", h.getBalanceByCustomerId)
 	}
 
 	return router

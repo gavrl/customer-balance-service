@@ -29,7 +29,7 @@ func (bs BalanceService) Refill(moveMoneyModel *model.MoveMoneyModel) (int, erro
 	balance, err := bs.GetByCustomerId(moveMoneyModel.CustomerId)
 	if err != nil {
 		// if balance not found, create and return amount
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, NotExistsCustomerError{CustomerId: moveMoneyModel.CustomerId}) {
 			amount, err = bs.create(moveMoneyModel.CustomerId, moveMoneyModel.Amount)
 			if err != nil {
 				return 0, err
@@ -58,15 +58,11 @@ func (bs BalanceService) Withdraw(moveMoneyModel *model.MoveMoneyModel) (int, er
 
 	balance, err := bs.GetByCustomerId(moveMoneyModel.CustomerId)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return 0, NotExistsCustomer{customerId: moveMoneyModel.CustomerId}
-		} else {
-			return 0, err
-		}
+		return 0, err
 	}
 
 	if balance.Amount-moveMoneyModel.Amount < 0 {
-		return 0, NotEnoughFunds{}
+		return 0, NotEnoughFundsError{}
 	}
 
 	balance.Amount -= moveMoneyModel.Amount
@@ -82,7 +78,11 @@ func (bs BalanceService) Withdraw(moveMoneyModel *model.MoveMoneyModel) (int, er
 func (bs BalanceService) GetByCustomerId(customerId int) (internal.Balance, error) {
 	balance, err := bs.repo.GetByCustomerId(customerId)
 	if err != nil {
-		return balance, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return balance, NotExistsCustomerError{CustomerId: customerId}
+		} else {
+			return balance, err
+		}
 	}
 	return balance, nil
 }

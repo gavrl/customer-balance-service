@@ -4,9 +4,11 @@ import (
 	"errors"
 	"github.com/gavrl/app/internal/dto"
 	"github.com/gavrl/app/internal/model"
+	"github.com/gavrl/app/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"net/http"
+	"strconv"
 )
 
 func (h *Handler) refill(c *gin.Context) {
@@ -80,4 +82,29 @@ func (h *Handler) withdraw(c *gin.Context) {
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"amount": &penny,
 	})
+}
+
+func (h *Handler) getBalanceByCustomerId(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		newErrorResponse(c, http.StatusBadRequest, "invalid id param")
+		return
+	}
+
+	balance, err := h.services.Balance.GetByCustomerId(id)
+	if err != nil {
+		if errors.Is(err, service.NotExistsCustomerError{CustomerId: id}) {
+			newErrorResponse(c, http.StatusNotFound, err.Error())
+		} else {
+			newErrorResponse(c, http.StatusBadRequest, err.Error())
+		}
+		return
+	}
+
+	outDTO := dto.MoveMoneyDTO{
+		CustomerId: balance.CustomerId,
+		Amount:     model.PennyAmount{Int: balance.Amount},
+	}
+
+	c.JSON(http.StatusOK, &outDTO)
 }
