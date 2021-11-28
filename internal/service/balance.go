@@ -6,23 +6,31 @@ import (
 	"github.com/gavrl/app/internal"
 	"github.com/gavrl/app/internal/model"
 	"github.com/gavrl/app/internal/repository"
+	"github.com/go-playground/validator/v10"
 )
 
 type BalanceService struct {
-	repo repository.BalanceRepository
+	repo      repository.BalanceRepository
+	validator *validator.Validate
 }
 
-func NewBalanceService(repo repository.BalanceRepository) *BalanceService {
-	return &BalanceService{repo: repo}
+func NewBalanceService(repo repository.BalanceRepository, validator *validator.Validate) *BalanceService {
+	return &BalanceService{repo: repo, validator: validator}
 }
 
-func (bs BalanceService) Refill(input model.RefillDto) (int, error) {
+func (bs BalanceService) Refill(moveMoneyModel *model.MoveMoneyModel) (int, error) {
 	var amount int
-	balance, err := bs.GetByCustomerId(input.CustomerId)
+
+	verr := bs.validateMoveMoneyModel(moveMoneyModel)
+	if verr != nil {
+		return 0, verr
+	}
+
+	balance, err := bs.GetByCustomerId(moveMoneyModel.CustomerId)
 	if err != nil {
 		// if balance not found, create and return amount
 		if errors.Is(err, sql.ErrNoRows) {
-			amount, err = bs.create(input.CustomerId, input.Amount.Int)
+			amount, err = bs.create(moveMoneyModel.CustomerId, moveMoneyModel.Amount)
 			if err != nil {
 				return 0, err
 			}
@@ -32,7 +40,36 @@ func (bs BalanceService) Refill(input model.RefillDto) (int, error) {
 		}
 	}
 
-	balance.Amount += input.Amount.Int
+	balance.Amount += moveMoneyModel.Amount
+
+	err = bs.updateAmount(balance)
+	if err != nil {
+		return 0, err
+	}
+
+	return balance.Amount, nil
+}
+
+func (bs BalanceService) Withdraw(moveMoneyModel *model.MoveMoneyModel) (int, error) {
+	verr := bs.validateMoveMoneyModel(moveMoneyModel)
+	if verr != nil {
+		return 0, verr
+	}
+
+	balance, err := bs.GetByCustomerId(moveMoneyModel.CustomerId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, NotExistsCustomer{customerId: moveMoneyModel.CustomerId}
+		} else {
+			return 0, err
+		}
+	}
+
+	if balance.Amount-moveMoneyModel.Amount < 0 {
+		return 0, NotEnoughFunds{}
+	}
+
+	balance.Amount -= moveMoneyModel.Amount
 
 	err = bs.updateAmount(balance)
 	if err != nil {
@@ -43,7 +80,6 @@ func (bs BalanceService) Refill(input model.RefillDto) (int, error) {
 }
 
 func (bs BalanceService) GetByCustomerId(customerId int) (internal.Balance, error) {
-	var balance internal.Balance
 	balance, err := bs.repo.GetByCustomerId(customerId)
 	if err != nil {
 		return balance, err
@@ -63,6 +99,14 @@ func (bs BalanceService) updateAmount(balance internal.Balance) error {
 	err := bs.repo.UpdateAmount(balance)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (bs BalanceService) validateMoveMoneyModel(model *model.MoveMoneyModel) error {
+	err := bs.validator.Struct(model)
+	if err != nil {
+		return err.(validator.ValidationErrors)
 	}
 	return nil
 }

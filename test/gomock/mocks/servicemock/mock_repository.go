@@ -64,20 +64,6 @@ func (mr *MockBalanceRepositoryMockRecorder) GetByCustomerId(customerId interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByCustomerId", reflect.TypeOf((*MockBalanceRepository)(nil).GetByCustomerId), customerId)
 }
 
-// Refill mocks base method.
-func (m *MockBalanceRepository) Refill(balance internal.Balance) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Refill", balance)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Refill indicates an expected call of Refill.
-func (mr *MockBalanceRepositoryMockRecorder) Refill(balance interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Refill", reflect.TypeOf((*MockBalanceRepository)(nil).Refill), balance)
-}
-
 // UpdateAmount mocks base method.
 func (m *MockBalanceRepository) UpdateAmount(balance internal.Balance) error {
 	m.ctrl.T.Helper()

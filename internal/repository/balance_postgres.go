@@ -14,10 +14,6 @@ func NewBalancePostgres(db *sqlx.DB) *BalancePostgres {
 	return &BalancePostgres{db: db}
 }
 
-func (r BalancePostgres) Refill(balance internal.Balance) error {
-	panic("implement me")
-}
-
 func (r BalancePostgres) GetByCustomerId(customerId int) (internal.Balance, error) {
 	var balance internal.Balance
 

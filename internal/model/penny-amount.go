@@ -7,11 +7,6 @@ import (
 	"strconv"
 )
 
-type RefillDto struct {
-	CustomerId int         `json:"customer_id" binding:"required,gt=0"`
-	Amount     PennyAmount `json:"amount" binding:"required,gt=0"`
-}
-
 type PennyAmount struct {
 	Int int `json:"amount" binding:"required,gt=0"`
 }

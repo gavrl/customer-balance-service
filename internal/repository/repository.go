@@ -17,7 +17,6 @@ type Config struct {
 }
 
 type BalanceRepository interface {
-	Refill(balance internal.Balance) error
 	GetByCustomerId(customerId int) (internal.Balance, error)
 	Create(customerId int, amount int) (int, error)
 	UpdateAmount(balance internal.Balance) error
